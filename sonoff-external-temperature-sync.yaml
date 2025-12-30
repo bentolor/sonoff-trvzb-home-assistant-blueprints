@@ -1,0 +1,111 @@
+blueprint:
+  name: Sonoff TRVZB - External Temperature Synchronization
+  description: |
+    This blueprint synchronizes the temperature from a high-quality external room sensor
+    (e.g., Aqara, Shelly, Ecowitt) to a Sonoff TRVZB thermostatic valve.
+
+    HOW IT WORKS:
+    1. It monitors your Source Sensor for changes.
+    2. It ensures the Sonoff TRV is set to "external" mode so it ignores its own internal sensor.
+    3. It pushes the new temperature value to the TRV only when the change exceeds your
+       defined threshold to save battery and reduce Zigbee traffic.
+
+    REQUIRED ENTITIES:
+    - Source Sensor: Your actual room temperature sensor.
+    - Target Input: The 'number' entity of your Sonoff TRV (e.g., number.sonoff_trv_external_temperature_input).
+    - Mode Selection: The 'select' entity of your Sonoff TRV (e.g., select.sonoff_trv_temperature_sensor_select).
+  domain: automation
+  input:
+    external_temperature_sensor:
+      name: Source Temperature Sensor
+      description: The external sensor that measures the actual room temperature (e.g., sensor.living_room_temp).
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: temperature
+    trv_external_temperature_input:
+      name: Sonoff TRV External Temperature Input
+      description: The number entity on your Sonoff TRV where the external temperature value is written.
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: number
+              device_class: temperature
+    trv_temperature_sensor_select:
+      name: Sonoff TRV Mode Selection
+      description: The select entity on your Sonoff TRV used to switch between 'internal' and 'external' sensors.
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: select
+              device_class: temperature
+    temperature_change_threshold:
+      name: Minimum Update Threshold
+      description: |
+        The temperature change (in C) required to trigger an update.
+        Higher values (e.g., 0.2) save battery. Set to 0 for every change.
+      default: 0.1
+      selector:
+        number:
+          min: 0
+          max: 2
+          step: 0.1
+          mode: slider
+          unit_of_measurement: °C
+
+mode: single
+
+triggers:
+  - platform: state
+    entity_id: !input external_temperature_sensor
+  - platform: time_pattern
+    minutes: 30
+
+variables:
+  external_temperature_sensor: !input external_temperature_sensor
+  trv_external_temperature_input: !input trv_external_temperature_input
+  select_entity: !input trv_temperature_sensor_select
+  threshold: !input temperature_change_threshold
+
+conditions:
+  - condition: template
+    value_template: >
+      {{ states(external_temperature_sensor) not in ['unknown', 'unavailable', None, 'none'] }}
+
+actions:
+  # 1. Ensure the TRV is in "external" mode
+  - choose:
+      - conditions: >
+          {{ states(select_entity) != 'external' }}
+        sequence:
+          - action: select.select_option
+            data:
+              entity_id: "{{ select_entity }}"
+              option: "external"
+          - delay: "00:00:02"
+
+  # 2. Update the temperature if the threshold is met
+  - variables:
+      current_trv_value: "{{ states(trv_external_temperature_input) | float(0) }}"
+      new_sensor_value: "{{ states(external_temperature_sensor) | float(0) }}"
+
+  - condition: template
+    value_template: >
+      {{ threshold == 0 or ((new_sensor_value - current_trv_value) | abs >= threshold) }}
+
+  - action: number.set_value
+    data:
+      value: "{{ new_sensor_value }}"
+      entity_id: "{{ trv_external_temperature_input }}"
+    alias: "Update TRV external temperature"
+
+  # 3. Log the update
+  - action: system_log.write
+    data:
+      message: >
+        [TRVZB Sync] Updated: {{ external_temperature_sensor }} ({{ new_sensor_value }} C)
+        pushed to {{ trv_external_temperature_input }}.
+      level: info
