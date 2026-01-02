@@ -16,13 +16,12 @@ blueprint:
           multiple: true
           filter:
             - domain: climate
-    outside_temperature_sensor:
-      name: Outside Temperature Sensor
-      description: Temperature sensor for outside temperature (can be weather forecast).
+    outside_temperature:
+      name: Outside Temperature Forecast Entity
+      description: Select a weather entity. The highest temperature of the day from its forecast will be used.
       selector:
         entity:
-          domain: sensor
-          device_class: temperature
+          domain: weather
     temperature_threshold:
       name: Temperature Threshold
       description: |
@@ -44,6 +43,12 @@ blueprint:
           filter:
             - integration: mobile_app
           multiple: true
+    notification_message:
+      name: Notification Message
+      description: Custom message to send to mobile devices when thermostats are turned on or off.
+      default: "Thermostats turned {{ state }} automatically."
+      selector:
+        text:
 
 mode: single
 
@@ -51,7 +56,7 @@ trigger:
   - platform: time
     at: "00:00:00"
   - platform: state
-    entity_id: !input outside_temperature_sensor
+    entity_id: !input outside_temperature
 
 variables:
   # Get current date and determine meteorological seasons
@@ -66,7 +71,7 @@ variables:
   is_season_to_turn_off: "{{ is_summer or is_spring }}"
 
   # Get outside temperature
-  outside_temp: "{{ states('!input outside_temperature_sensor') | float(0) }}"
+  outside_temp: "{{ states('!input outside_temperature') | float(0) }}"
 
   # Temperature threshold
   threshold: !input temperature_threshold
@@ -98,7 +103,7 @@ actions:
               sequence:
                 - service: notify.mobile_app
                   data:
-                    message: "Thermostats turned off automatically due to warm outside temperature ({{ outside_temp }}°C)."
+                    message: !input notification_message
                     title: "Thermostats Turned Off"
                     target:
                       device: "{{ repeat.item }}"
@@ -121,7 +126,7 @@ actions:
               sequence:
                 - service: notify.mobile_app
                   data:
-                    message: "Thermostats turned off automatically due to seasonal conditions (Spring/Summer)."
+                    message: !input notification_message
                     title: "Thermostats Turned Off"
                     target:
                       device: "{{ repeat.item }}"
@@ -144,7 +149,7 @@ actions:
               sequence:
                 - service: notify.mobile_app
                   data:
-                    message: "Thermostats turned on automatically due to seasonal conditions (Autumn/Winter)."
+                    message: !input notification_message
                     title: "Thermostats Turned On"
                     target:
                       device: "{{ repeat.item }}"
@@ -167,7 +172,7 @@ actions:
               sequence:
                 - service: notify.mobile_app
                   data:
-                    message: "Thermostats turned on automatically due to cool outside temperature ({{ outside_temp }}°C)."
+                    message: !input notification_message
                     title: "Thermostats Turned On"
                     target:
                       device: "{{ repeat.item }}"
