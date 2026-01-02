@@ -1,14 +1,12 @@
 blueprint:
-  name: Sonoff Window/Thermostat Sync
+  name: Sonoff TRVZB - Window/Thermostat Synchronization
   description: >
-    Specifically for Sonoff thermostats. Monitors a window sensor and forces the
-    Sonoff 'Window Open' switch to stay active. If the thermostat turns the
-    feature off while the window is still open, it re-activates it and notifies you.
+    Monitors a window sensor and forces the Sonoff 'Window Open' switch to stay active.
+    Includes a customizable notification message.
   domain: automation
   input:
     window_sensor:
       name: Window Sensor
-      description: The sensor that detects if the window is open.
       selector:
         entity:
           domain: binary_sensor
@@ -18,44 +16,43 @@ blueprint:
       selector:
         entity:
           domain: switch
-          device_class: temperature
           multiple: true
     notify_devices:
       name: Notification Devices
-      description: Select one or more devices to receive the alert.
       selector:
         device:
           filter:
             - integration: mobile_app
           multiple: true
+    custom_message:
+      name: Notification Message
+      description: The message sent when the thermostat tries to turn off window mode prematurely.
+      default: "The thermostat tried to resume heating, but the window is still open. Consider closing the windows because the temperature is not changing anymore."
+      selector:
+        text:
 
-mode: parallel # Allows multiple windows/rooms to run this logic simultaneously
+mode: parallel
 
 trigger:
-  # Trigger 1: Physical window opens
   - platform: state
     entity_id: !input window_sensor
     from: "off"
     to: "on"
     id: "window_opened"
-  # Trigger 2: Physical window closes
   - platform: state
     entity_id: !input window_sensor
     from: "on"
     to: "off"
     id: "window_closed"
-  # Trigger 3: The Sonoff switch turns OFF (likely by the thermostat firmware)
   - platform: state
     entity_id: !input sonoff_window_switches
     from: "on"
     to: "off"
     id: "switch_turned_off"
 
-condition: []
-
 action:
   - choose:
-      # ACTION: Window opened -> Turn ON Sonoff window mode
+      # ACTION: Window opened
       - conditions:
           - condition: trigger
             id: "window_opened"
@@ -64,7 +61,7 @@ action:
             target:
               entity_id: !input sonoff_window_switches
 
-      # ACTION: Window closed -> Turn OFF Sonoff window mode
+      # ACTION: Window closed
       - conditions:
           - condition: trigger
             id: "window_closed"
@@ -73,7 +70,7 @@ action:
             target:
               entity_id: !input sonoff_window_switches
 
-      # ACTION: Logic Check - Switch turned off but window is still open
+      # ACTION: Logic Check
       - conditions:
           - condition: trigger
             id: "switch_turned_off"
@@ -81,15 +78,16 @@ action:
             entity_id: !input window_sensor
             state: "on"
         sequence:
-          # Re-activate the switch
           - service: switch.turn_on
             target:
               entity_id: !input sonoff_window_switches
-          # Notify all selected devices
+          # Send notification to each selected device
           - repeat:
               for_each: !input notify_devices
               sequence:
-                - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | lower | replace(' ', '_') | replace('-', '_') }}
+                - service: notify.mobile_app
                   data:
+                    message: !input custom_message
                     title: "Window still open"
-                    message: "The thermostat tried to resume heating, but the window is still open. Re-enabling window mode."
+                    target:
+                      device: "{{ repeat.item }}"

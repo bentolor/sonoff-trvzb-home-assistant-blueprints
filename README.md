@@ -4,7 +4,7 @@ A collection of Home Assistant blueprints for Sonoff devices, designed to enhanc
 
 ## Current Blueprints
 
-### Sonoff - External Temperature Synchronization
+### Sonoff TRVZB - External Temperature Synchronization
 This script was taken from the czech home assistant community: [Post from User Pete30](https://www.homeassistant-cz.cz/viewtopic.php?p=23736)
 
 I translated, modified and tested it to make it more usable for non czech-speakers.
@@ -21,7 +21,7 @@ It synchronizes temperature from an external sensor to a Sonoff TRVZB thermostat
 - External temperature sensor (e.g., Sonoff, Aqara, Shelly, Ecowitt)
 - Sonoff TRVZB with external temperature input capability (Firmware 1.3+)
 
-### Sonoff Window/Thermostat Sync Blueprint
+### Sonoff TRVZB - Window/Thermostat Synchronization
 
 A Home Assistant blueprint specifically designed for Sonoff thermostats that monitors window sensors and ensures the "Window Open" feature remains active when windows are open.
 

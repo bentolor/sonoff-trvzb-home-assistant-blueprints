@@ -1,0 +1,173 @@
+blueprint:
+  name: Sonoff TRVZB - Seasonal Pause
+  description: |
+    Automatically turns off Sonoff TRVZB thermostats based on:
+    1. Meteorological seasons (turns off in Spring/Summer)
+    2. Temperature threshold (turns off when outside temperature is reached)
+
+    Uses Meteorological seasons for more accurate seasonal determination.
+  domain: automation
+  input:
+    thermostats:
+      name: Thermostats to Control
+      description: Select all the TRVZB thermostats you want to control.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: climate
+    outside_temperature_sensor:
+      name: Outside Temperature Sensor
+      description: Temperature sensor for outside temperature (can be weather forecast).
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    temperature_threshold:
+      name: Temperature Threshold
+      description: |
+        Temperature threshold (in C) to turn off thermostats when outside temperature is reached.
+        Set to 0 to disable temperature-based turning off.
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+          mode: slider
+          unit_of_measurement: °C
+    notification_devices:
+      name: Notification Devices
+      description: Mobile devices to receive notifications when thermostats are turned off.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+          multiple: true
+
+mode: single
+
+trigger:
+  - platform: time
+    at: "00:00:00"
+  - platform: state
+    entity_id: !input outside_temperature_sensor
+
+variables:
+  # Get current date and determine meteorological seasons
+  current_month: "{{ now().month }}"
+
+  is_spring: "{{ current_month >= 3 and current_month <= 5 }}"
+  is_summer: "{{ current_month >= 6 and current_month <= 8 }}"
+  is_autumn: "{{ current_month >= 9 and current_month <= 11 }}"
+  is_winter: "{{ current_month == 12 or current_month <= 2 }}"
+
+  # Determine if we're in season to turn off thermostats
+  is_season_to_turn_off: "{{ is_summer or is_spring }}"
+
+  # Get outside temperature
+  outside_temp: "{{ states('!input outside_temperature_sensor') | float(0) }}"
+
+  # Temperature threshold
+  threshold: !input temperature_threshold
+
+conditions:
+  - condition: template
+    value_template: >
+      {{ outside_temp not in ['unknown', 'unavailable', None, 'none'] }}
+
+actions:
+  - choose:
+      # Turn off thermostats if in spring/summer OR temperature threshold is met
+      - conditions:
+          - condition: template
+            value_template: "{{ is_season_to_turn_off }}"
+          - condition: template
+            value_template: "{{ threshold > 0 and outside_temp >= threshold }}"
+        sequence:
+          - service: climate.turn_off
+            target:
+              entity_id: !input thermostats
+          - service: system_log.write
+            data:
+              message: >
+                [TRVZB Auto Off] Thermostats turned off due to temperature threshold ({{ outside_temp }}°C).
+              level: info
+          - repeat:
+              for_each: !input notification_devices
+              sequence:
+                - service: notify.mobile_app
+                  data:
+                    message: "Thermostats turned off automatically due to warm outside temperature ({{ outside_temp }}°C)."
+                    title: "Thermostats Turned Off"
+                    target:
+                      device: "{{ repeat.item }}"
+
+      # Turn off thermostats if in spring/summer (seasonal control)
+      - conditions:
+          - condition: template
+            value_template: "{{ is_season_to_turn_off }}"
+        sequence:
+          - service: climate.turn_off
+            target:
+              entity_id: !input thermostats
+          - service: system_log.write
+            data:
+              message: >
+                [TRVZB Auto Off] Thermostats turned off due to seasonal conditions.
+              level: info
+          - repeat:
+              for_each: !input notification_devices
+              sequence:
+                - service: notify.mobile_app
+                  data:
+                    message: "Thermostats turned off automatically due to seasonal conditions (Spring/Summer)."
+                    title: "Thermostats Turned Off"
+                    target:
+                      device: "{{ repeat.item }}"
+
+      # Turn on thermostats if NOT in spring/summer (autumn/winter)
+      - conditions:
+          - condition: template
+            value_template: "{{ not is_season_to_turn_off }}"
+        sequence:
+          - service: climate.turn_on
+            target:
+              entity_id: !input thermostats
+          - service: system_log.write
+            data:
+              message: >
+                [TRVZB Auto Off] Thermostats turned on due to seasonal conditions.
+              level: info
+          - repeat:
+              for_each: !input notification_devices
+              sequence:
+                - service: notify.mobile_app
+                  data:
+                    message: "Thermostats turned on automatically due to seasonal conditions (Autumn/Winter)."
+                    title: "Thermostats Turned On"
+                    target:
+                      device: "{{ repeat.item }}"
+
+      # Handle temperature-based turning on when outside temperature drops below threshold
+      - conditions:
+          - condition: template
+            value_template: "{{ not is_season_to_turn_off and threshold > 0 and outside_temp < threshold }}"
+        sequence:
+          - service: climate.turn_on
+            target:
+              entity_id: !input thermostats
+          - service: system_log.write
+            data:
+              message: >
+                [TRVZB Auto Off] Thermostats turned on due to temperature threshold ({{ outside_temp }}°C).
+              level: info
+          - repeat:
+              for_each: !input notification_devices
+              sequence:
+                - service: notify.mobile_app
+                  data:
+                    message: "Thermostats turned on automatically due to cool outside temperature ({{ outside_temp }}°C)."
+                    title: "Thermostats Turned On"
+                    target:
+                      device: "{{ repeat.item }}"
