@@ -17,6 +17,59 @@ blueprint:
         entity:
           domain: switch
           multiple: true
+    sonoff_thermostats:
+      name: Sonoff Thermostats
+      description: The actual climate entities for your Sonoff thermostats that should stop heating.
+      selector:
+        entity:
+          domain: climate
+          multiple: true
+    delay_off_heating:
+      name: Delay before turning off heating
+      description: How long to wait before turning off the heating after a window opens.
+      default: 3
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    delay_on_heating:
+      name: Delay before turning on heating
+      description: How long to wait before turning on the heating after a window closes.
+      default: 3
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    temperature_sensors:
+      name: Temperature Sensors for Cold Notification
+      description: Select one or more temperature sensors to monitor for cold room notifications.
+      selector:
+        entity:
+          domain: [sensor, climate]
+          device_class: temperature
+          multiple: true
+    frost_protection_temp_set:
+      name: Frost Protection Temperature Threshold
+      description: The temperature (e.g. 7°C) to compare against for the "room too cold" notification.
+      default: 7
+      selector:
+        number:
+          min: 4
+          max: 35
+          step: 1
+          unit_of_measurement: °C
+    temp_diff_for_cold_notify:
+      name: Temperature Difference for Cold Notification
+      description: Notify when the current temperature is within this difference (above) of the Frost Protection Threshold.
+      default: 3
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.5
+          unit_of_measurement: °C
     notify_devices:
       name: Notification Devices
       selector:
@@ -25,9 +78,15 @@ blueprint:
             - integration: mobile_app
           multiple: true
     custom_message:
-      name: Notification Message
+      name: Notification Message (Window still open)
       description: The message sent when the thermostat tries to turn off window mode prematurely.
       default: "The thermostat tried to resume heating, but the window is still open. Consider closing the windows because the temperature is not changing anymore."
+      selector:
+        text:
+    cold_room_message:
+      name: Cold Room Notification Message
+      description: The message sent when the room temperature drops too low with an open window.
+      default: "The room is getting very cold with the window still open! The coldest sensor reports {{ coldest_temp_found }}°C, which is below the warning threshold of {{ target_cold_temp_threshold }}°C. Please close the window soon to prevent further temperature drops."
       selector:
         text:
 
@@ -49,6 +108,21 @@ trigger:
     from: "on"
     to: "off"
     id: "switch_turned_off"
+  - platform: template
+    value_template: >
+      {% set frost_threshold_temp = states('input_frost_protection_temp_set') | float(0) %}
+      {% set temp_diff_notify = states('input_temp_diff_for_cold_notify') | float(0) %}
+      {% set target_cold_temp_threshold = frost_threshold_temp + temp_diff_notify %}
+      {% set should_trigger = false %}
+      {% for entity in expand('!input temperature_sensors') %}
+        {% if entity.state is defined and entity.state | is_number %}
+          {% if entity.state | float < target_cold_temp_threshold %}
+            {% set should_trigger = true %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {{ should_trigger }}
+    id: "room_getting_cold"
 
 action:
   - choose:
@@ -60,6 +134,13 @@ action:
           - service: switch.turn_on
             target:
               entity_id: !input sonoff_window_switches
+          - delay:
+              seconds: !input delay_off_heating
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input sonoff_thermostats
+            data:
+              hvac_mode: "off"
 
       # ACTION: Window closed
       - conditions:
@@ -69,8 +150,15 @@ action:
           - service: switch.turn_off
             target:
               entity_id: !input sonoff_window_switches
+          - delay:
+              seconds: !input delay_on_heating
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input sonoff_thermostats
+            data:
+              hvac_mode: heat
 
-      # ACTION: Logic Check
+      # ACTION A: Sonoff Window Open Switch prematurely turned off (original logic check)
       - conditions:
           - condition: trigger
             id: "switch_turned_off"
@@ -89,5 +177,38 @@ action:
                   data:
                     message: !input custom_message
                     title: "Window still open"
+                    target:
+                      device: "{{ repeat.item }}"
+
+      # ACTION B: Room temperature dropped below cold threshold (new temperature-based logic)
+      - conditions:
+          - condition: trigger
+            id: "room_getting_cold"
+          - condition: state # Only notify if window is actually open
+            entity_id: !input window_sensor
+            state: "on"
+        sequence:
+          - variables:
+              frost_threshold_temp: !input frost_protection_temp_set
+              temp_diff_notify: !input temp_diff_for_cold_notify
+              target_cold_temp_threshold: "{{ frost_threshold_temp + temp_diff_notify }}"
+              coldest_temp_found: >
+                {% set coldest = none %}
+                {% for entity_id in expand('!input temperature_sensors') %}
+                  {% if states(entity_id.entity_id) is defined and states(entity_id.entity_id) | is_number %}
+                    {% set current_temp = states(entity_id.entity_id) | float %}
+                    {% if coldest is none or current_temp < coldest %}
+                      {% set coldest = current_temp %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {{ coldest }}
+          - repeat:
+              for_each: !input notify_devices
+              sequence:
+                - service: notify.mobile_app
+                  data:
+                    message: !input cold_room_message
+                    title: "Room too cold, close window!"
                     target:
                       device: "{{ repeat.item }}"
