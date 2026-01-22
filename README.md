@@ -34,9 +34,27 @@ A Home Assistant blueprint specifically designed for Sonoff thermostats that mon
 
 **Requirements**
 
-- Sonoff thermostat devices with "Window Open" functionality
+- Sonoff TRVZB with "Window Open" functionality
 - Binary sensor entities for your windows/doors
 - Mobile app integration for notifications (optional)
+
+### Sonoff TRVZB - Seasonal Pause (experimental - will be tested in spring) ###
+
+This automation blueprint automatically controls Sonoff TRVZB thermostats based on meteorological seasons and temperature thresholds. It turns off thermostats during spring and summer months, or when outside temperatures reach a specified threshold.
+
+#### This blueprint is not yet tested because we have winter :) ####
+
+**Features**
+
+- Seasonal Control: Automatically turns off thermostats during spring (March-May) and summer (June-August) months
+- Temperature Threshold: Turns off thermostats when outside temperature reaches a specified threshold (0-30°C)
+- Dual Control Mechanism: Combines seasonal logic with temperature-based logic
+Mobile Notifications: Sends notifications to specified mobile devices when thermostats are turned on/off
+- Meteorological Seasons: Uses proper meteorological seasons for accurate seasonal determination
+
+**Requirements**
+
+- Sonoff TRVZB
 
 ## Installation
 
