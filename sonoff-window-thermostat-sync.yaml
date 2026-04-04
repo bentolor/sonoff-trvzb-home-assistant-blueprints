@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - Window/Thermostat Synchronization
+  name: Sonoff TRVZB - Window/Thermostat Synchronization (bentolor v1.0)
   description: >
     Monitors a window sensor and forces the Sonoff 'Window Open' switch to stay active.
     Includes a customizable notification message.
@@ -17,6 +17,17 @@ blueprint:
         entity:
           domain: switch
           multiple: true
+    sonoff_target_hvac_mode:
+      name: Target mode for thermostats
+      description: Defines if the thermostats should follow the defined, static target temperature ('heat') or the internal weekly schedule ('auto').
+      selector:
+        select:
+          options:
+            - label: Follow static target temperature ('heat')
+              value: heat
+            - label: Follow TVRZB-internal schedule ('auto')
+              value: auto
+
     sonoff_thermostats:
       name: Sonoff Thermostats
       description: The actual climate entities for your Sonoff thermostats that should stop heating.
@@ -156,7 +167,7 @@ action:
             target:
               entity_id: !input sonoff_thermostats
             data:
-              hvac_mode: heat
+              hvac_mode: !input sonoff_target_hvac_mode
 
       # ACTION A: Sonoff Window Open Switch prematurely turned off (original logic check)
       - conditions:

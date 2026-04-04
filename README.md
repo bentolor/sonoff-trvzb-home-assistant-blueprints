@@ -1,3 +1,9 @@
+# Fork notes
+This repo is forked from https://github.com/MrUhu/sonoff-trvzb-home-assistant-blueprints
+
+Changes:
+- Provide a `sonoff_target_hvac_mode` configurable to select, if the thermostats should follow the defined, static target temperature (`heat`) or the internal weekly schedule (`auto`).
+
 # Sonoff Home Automation Blueprints
 
 A collection of Home Assistant blueprints for Sonoff devices, designed to enhance your smart home automation.
