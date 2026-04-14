@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - Window/Thermostat Synchronization (bentolor v1.0)
+  name: Sonoff TRVZB - Disable on open windows (bentolor v1.1)
   description: >
     Monitors a window sensor and forces the Sonoff 'Window Open' switch to stay active.
     Includes a customizable notification message.
@@ -27,7 +27,8 @@ blueprint:
               value: heat
             - label: Follow TVRZB-internal schedule ('auto')
               value: auto
-
+            - label: Keep it disabled ('off')
+              value: "off"
     sonoff_thermostats:
       name: Sonoff Thermostats
       description: The actual climate entities for your Sonoff thermostats that should stop heating.
