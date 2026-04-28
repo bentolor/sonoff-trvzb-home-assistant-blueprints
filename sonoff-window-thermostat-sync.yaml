@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - Disable on open windows (bentolor v1.1)
+  name: Sonoff TRVZB - Disable on open windows (bentolor v1.2)
   description: >
     Monitors a window sensor and forces the Sonoff 'Window Open' switch to stay active.
     Includes a customizable notification message.
@@ -190,12 +190,19 @@ action:
           - repeat:
               for_each: !input notify_devices
               sequence:
-                - service: notify.mobile_app
+                - action: notify.send_message
+                  target:
+                    device_id: "{{ repeat.item }}"
                   data:
-                    message: !input custom_message
                     title: "Window still open"
-                    target:
-                      device: "{{ repeat.item }}"
+                    message: !input custom_message
+                    data:
+                      push:
+                        sound:
+                          name: default
+                          cricital: 1
+                      channel: alarm_stream
+                      importance: high
 
       # ACTION B: Room temperature dropped below cold threshold (new temperature-based logic)
       - conditions:
@@ -220,12 +227,20 @@ action:
                   {% endif %}
                 {% endfor %}
                 {{ coldest }}
+          # Send notification to each selected device
           - repeat:
               for_each: !input notify_devices
               sequence:
-                - service: notify.mobile_app
+                - action: notify.send_message
+                  target:
+                    device_id: "{{ repeat.item }}"
                   data:
-                    message: !input cold_room_message
                     title: "Room too cold, close window!"
-                    target:
-                      device: "{{ repeat.item }}"
+                    message: !input cold_room_message
+                    data:
+                      push:
+                        sound:
+                          name: default
+                          cricital: 1
+                      channel: alarm_stream
+                      importance: high
