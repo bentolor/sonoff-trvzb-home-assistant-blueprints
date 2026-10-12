@@ -98,10 +98,10 @@ actions:
             entity_id: "{{ trv_entity }}"
         - delay: "00:00:02"
 
-  # 3. Log the update
-  - action: system_log.write
-    data:
-      message: >
-        [TRVZB Sync] Synced {{ external_sensor }} ({{ states(external_sensor) }} C)
-        to selected TRVs.
-      level: info
+        # 3. Log the update
+        - action: system_log.write
+          data:
+            message: >
+              [TRVZB Sync] Synced {{ external_sensor }} ({{ states(external_sensor) }} C)
+              to selected TRVs.
+            level: info
