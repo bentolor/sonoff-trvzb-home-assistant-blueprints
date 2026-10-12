@@ -1,9 +1,10 @@
 # Fork notes
 This repo is forked from https://github.com/MrUhu/sonoff-trvzb-home-assistant-blueprints
 
-Changes:
+**Changes:**
 - v1.1 Provide a `sonoff_target_hvac_mode` configurable to select, if the thermostats should follow the defined, static target temperature (`heat`) or the internal weekly schedule (`auto`) or keep it off (`off`).
 - v1.2 Trying to fix notifications due to vanished action. Fix based on [this blueprint](https://gist.github.com/dkedinger/6129ba612de18ed4d562cc2995a9dc5d)
+- v1.3 Fix error: `Option external is not valid for entity select.thermostat_bedroom_temperature_sensor_select, valid options are: local_temperature, remote_temperature, remote_source_offline` : `external` → `remote_temperature`
 
 # Sonoff Home Automation Blueprints
 
@@ -22,7 +23,7 @@ It synchronizes temperature from an external sensor to a Sonoff TRVZB thermostat
 - Monitors your external temperature sensor so that your TRV knows the temperature in the room
 - Updates temperature only when changes exceed your threshold (saves battery)
 - Therefore we have a configurable update threshold (default: 0.1°C)
-- Ensures Sonoff TRV is in "external" mode - these TRVs switch to different modes (internal, external_2 etc.) from time to time
+- Ensures Sonoff TRV is in "remote_temperature" mode - these TRVs switch to different modes (internal, remote_source_offline etc.) from time to time
 
 **Requirements**
 - External temperature sensor (e.g., Sonoff, Aqara, Shelly, Ecowitt)

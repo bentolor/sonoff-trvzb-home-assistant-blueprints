@@ -1,11 +1,11 @@
 blueprint:
-  name: Sonoff TRVZB - External Temperature Synchronization
+  name: Sonoff TRVZB - External Temperature Synchronization (bentolor v1.3)
   description: |
     This blueprint synchronizes temperature from a single external sensor to one or more
     Sonoff TRVZB valves.
 
     It iterates through all selected TRVs to:
-    1. Ensure each TRV is set to 'external' mode.
+    1. Ensure each TRV is set to 'remote_temperature' mode.
     2. Update the temperature on each TRV if the threshold is met.
   domain: automation
   input:
@@ -28,7 +28,7 @@ blueprint:
               device_class: temperature
     trv_temperature_sensor_selects:
       name: Sonoff TRV Mode Selections
-      description: Select all the select entities for the TRVs to ensure they stay in 'external' mode.
+      description: Select all the select entities for the TRVs to ensure they stay in 'remote_temperature' mode.
       selector:
         entity:
           multiple: true
@@ -67,16 +67,16 @@ conditions:
       {{ states(external_sensor) not in ['unknown', 'unavailable', None, 'none'] }}
 
 actions:
-  # 1. Loop through each select entity to ensure it is in 'external' mode
+  # 1. Loop through each select entity to ensure it is in 'remote_temperature' mode
   - repeat:
       for_each: "{{ trv_selects }}"
       sequence:
         - condition: template
-          value_template: "{{ states(repeat.item) != 'external' }}"
+          value_template: "{{ states(repeat.item) != 'remote_temperature' }}"
         - action: select.select_option
           data:
             entity_id: "{{ repeat.item }}"
-            option: "external"
+            option: "remote_temperature"
         - delay: "00:00:02"
 
   # 2. Loop through each temperature input to update values
