@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - Seasonal Pause (bentolor v1.3)
+  name: Sonoff TRVZB - Seasonal Pause (bentolor v1.4)
   description: |
     Automatically turns off Sonoff TRVZB thermostats based on:
     1. Meteorological seasons (turns off in Spring/Summer)
