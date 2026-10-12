@@ -5,6 +5,8 @@ This repo is forked from https://github.com/MrUhu/sonoff-trvzb-home-assistant-bl
 - v1.1 Provide a `sonoff_target_hvac_mode` configurable to select, if the thermostats should follow the defined, static target temperature (`heat`) or the internal weekly schedule (`auto`) or keep it off (`off`).
 - v1.2 Trying to fix notifications due to vanished action. Fix based on [this blueprint](https://gist.github.com/dkedinger/6129ba612de18ed4d562cc2995a9dc5d)
 - v1.3 Fix error: `Option external is not valid for entity select.thermostat_bedroom_temperature_sensor_select, valid options are: local_temperature, remote_temperature, remote_source_offline` : `external` → `remote_temperature`
+- v1.4 retracted
+- v1.5 Trying to fix non-working external temperatur sensor update threshold.
 
 # Sonoff Home Automation Blueprints
 

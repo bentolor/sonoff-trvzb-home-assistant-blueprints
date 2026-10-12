@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - External Temperature Synchronization (bentolor v1.3)
+  name: Sonoff TRVZB - External Temperature Synchronization (bentolor v1.5)
   description: |
     This blueprint synchronizes temperature from a single external sensor to one or more
     Sonoff TRVZB valves.
@@ -38,7 +38,7 @@ blueprint:
       name: Minimum Update Threshold
       description: |
         Minimum temperature change (in C) to trigger an update from the external sensor.
-      default: 0.1
+      default: 0.3
       selector:
         number:
           min: 0
@@ -90,7 +90,7 @@ actions:
 
         - condition: template
           value_template: >
-            {{ threshold == 0 or ((new_sensor_value - current_trv_value) | abs >= threshold) }}
+            {{ (threshold | abs < float(0.1)) or ((new_sensor_value - current_trv_value) | abs >= threshold) }}
 
         - action: number.set_value
           data:
