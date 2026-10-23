@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - External Temperature Synchronization (bentolor v1.5)
+  name: Sonoff TRVZB - External Temperature Synchronization (bentolor v1.6)
   description: |
     This blueprint synchronizes temperature from a single external sensor to one or more
     Sonoff TRVZB valves.
@@ -105,3 +105,5 @@ actions:
               [TRVZB Sync] Synced {{ external_sensor }} ({{ states(external_sensor) }} C)
               to selected TRVs.
             level: info
+
+        - delay: "00:00:02"

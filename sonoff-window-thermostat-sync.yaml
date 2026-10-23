@@ -196,13 +196,6 @@ action:
                   data:
                     title: "Window still open"
                     message: !input custom_message
-                    data:
-                      push:
-                        sound:
-                          name: default
-                          cricital: 1
-                      channel: alarm_stream
-                      importance: high
 
       # ACTION B: Room temperature dropped below cold threshold (new temperature-based logic)
       - conditions:
@@ -237,10 +230,3 @@ action:
                   data:
                     title: "Room too cold, close window!"
                     message: !input cold_room_message
-                    data:
-                      push:
-                        sound:
-                          name: default
-                          cricital: 1
-                      channel: alarm_stream
-                      importance: high

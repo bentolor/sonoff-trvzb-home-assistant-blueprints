@@ -7,6 +7,7 @@ This repo is forked from https://github.com/MrUhu/sonoff-trvzb-home-assistant-bl
 - v1.3 Fix error: `Option external is not valid for entity select.thermostat_bedroom_temperature_sensor_select, valid options are: local_temperature, remote_temperature, remote_source_offline` : `external` → `remote_temperature`
 - v1.4 retracted
 - v1.5 Trying to fix non-working external temperatur sensor update threshold.
+- v1.6 fix(thermostat-sync): drop invalid cold notification data payload
 
 # Sonoff Home Automation Blueprints
 
