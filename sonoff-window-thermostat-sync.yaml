@@ -1,5 +1,5 @@
 blueprint:
-  name: Sonoff TRVZB - Disable on open windows (bentolor v1.2)
+  name: Sonoff TRVZB - Disable on open windows (bentolor v1.6)
   description: >
     Monitors a window sensor and forces the Sonoff 'Window Open' switch to stay active.
     Includes a customizable notification message.
